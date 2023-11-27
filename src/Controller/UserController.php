@@ -3,32 +3,22 @@
 namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Entity\User;
 use App\Repository\UserRepository;
+use App\Entity\Customer;
+use App\Repository\CustomerRepository;
 use Symfony\Component\Serializer\SerializerInterface;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class UserController extends AbstractController
 {
-    /*#[Route('/api/users', name: 'app_user', methods: ['GET'])]
-    public function getUserList(UserRepository $userRepository, SerializerInterface $serializer): JsonResponse
-    {
-        $userList = $userRepository->findAll();
-        $jsonUserList = $serializer->serialize($userList, 'json', ['groups' => 'getUsersList']);
-        return new JsonResponse($jsonUserList, Response::HTTP_OK, [], true);
-    }*/
-    /*#[Route('/api/users/{client}', name: 'app_user', methods: ['GET'])]
-    public function getUserList(string $client, UserRepository $userRepository, SerializerInterface $serializer): JsonResponse
-    {
-        $userList = $userRepository->findBy(
-            ['customer' => $client],
-            ['id' => 'ASC']
-        );
-        $jsonUserList = $serializer->serialize($userList, 'json', ['groups' => 'getUsersList']);
-        return new JsonResponse($jsonUserList, Response::HTTP_OK, [], true);
-    }*/
-
     #[Route('/api/users/{client}', name: 'app_user', methods: ['GET'])]
     public function getUserList(string $client, CustomerRepository $customerRepository, SerializerInterface $serializer): JsonResponse
     {
@@ -41,10 +31,10 @@ class UserController extends AbstractController
     }
 
 
-    #[Route('/api/users/{id}', name: 'detailUser', methods: ['GET'])]
+    #[Route('/api/user/{id}', name: 'detailUser', methods: ['GET'])]
     public function getDetailUser(User $user, SerializerInterface $serializer): JsonResponse 
     {
-        $jsonUser = $serializer->serialize($user, 'json');
+        $jsonUser = $serializer->serialize($user, 'json', ['groups' => 'getUser']);
         return new JsonResponse($jsonUser, Response::HTTP_OK, ['accept' => 'json'], true);
     }
 
@@ -59,11 +49,28 @@ class UserController extends AbstractController
     }
 
 
-    #[Route('/api/users', name:"createUser", methods: ['POST'])]
-    public function createUser(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, UrlGeneratorInterface $urlGenerator): JsonResponse 
+    #[Route('/api/user', name:"createUser", methods: ['POST'])]
+    public function createUser(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, UrlGeneratorInterface $urlGenerator, CustomerRepository $customerRepository, ValidatorInterface $validator): JsonResponse 
     {
 
         $user = $serializer->deserialize($request->getContent(), User::class, 'json');
+
+        // On vérifie les erreurs
+        $errors = $validator->validate($user);
+
+        if ($errors->count() > 0) {
+            return new JsonResponse($serializer->serialize($errors, 'json'), JsonResponse::HTTP_BAD_REQUEST, [], true);
+        }
+
+        // Récupération de l'ensemble des données envoyées sous forme de tableau
+        $content = $request->toArray();
+
+        // Récupération de l'idCustomer. S'il n'est pas défini, alors on met 5 par défaut.
+        //$idCustomer = $content['idCustomer'] ?? 5;
+        //$user->setCustomer($customerRepository->find($idCustomer));
+        $nameCustomer=$content['nameCustomer'];
+        $user->setCustomer($customerRepository->findOneBy(['name' => $nameCustomer]));
+
         $em->persist($user);
         $em->flush();
 
