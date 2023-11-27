@@ -83,12 +83,16 @@ class UserController extends AbstractController
 
 
    #[Route('/api/users/{id}', name:"updateUser", methods:['PUT'])]
-    public function updateUser(Request $request, SerializerInterface $serializer, User $currentUser, EntityManagerInterface $em): JsonResponse 
+    public function updateUser(Request $request, SerializerInterface $serializer, User $currentUser, EntityManagerInterface $em, CustomerRepository $customerRepository): JsonResponse 
     {
         $updatedUser = $serializer->deserialize($request->getContent(), 
                 User::class, 
                 'json', 
                 [AbstractNormalizer::OBJECT_TO_POPULATE => $currentUser]);
+
+        $content = $request->toArray();
+        $nameCustomer=$content['nameCustomer'];
+        $updatedUser->setCustomer($customerRepository->findOneBy(['name' => $nameCustomer]));
         
         $em->persist($updatedUser);
         $em->flush();
