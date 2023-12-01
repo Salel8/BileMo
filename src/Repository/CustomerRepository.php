@@ -45,4 +45,13 @@ class CustomerRepository extends ServiceEntityRepository
 //            ->getOneOrNullResult()
 //        ;
 //    }
+    /*public function findByWithPagination($value, $page, $limit) {
+        $qb = $this->createQueryBuilder('c')
+            ->andWhere('c.name = :val')
+            ->setParameter('val', $value)
+            ->orderBy('c.id', 'ASC')
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit);
+        return $qb->getQuery()->getResult();
+    }*/
 }
