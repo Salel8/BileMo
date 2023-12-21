@@ -8,10 +8,13 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Entity\Product;
 use App\Repository\ProductRepository;
-use Symfony\Component\Serializer\SerializerInterface;
+//use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
+use JMS\Serializer\Serializer;
+use JMS\Serializer\SerializationContext;
+use JMS\Serializer\SerializerInterface;
 
 class ProductController extends AbstractController
 {

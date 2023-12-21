@@ -10,7 +10,7 @@ use App\Entity\User;
 use App\Repository\UserRepository;
 use App\Entity\Customer;
 use App\Repository\CustomerRepository;
-use Symfony\Component\Serializer\SerializerInterface;
+//use Symfony\Component\Serializer\SerializerInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -18,6 +18,10 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
+use JMS\Serializer\Serializer;
+use JMS\Serializer\SerializationContext;
+use JMS\Serializer\SerializerInterface;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class UserController extends AbstractController
 {
@@ -51,7 +55,9 @@ class UserController extends AbstractController
             $item->tag("usersCache");
             $item->expiresAfter(180);
             $userList = $userRepository->findByWithPagination($client, $page, $limit);
-            return $serializer->serialize($userList, 'json', ['groups' => 'getUser']);
+            $context = SerializationContext::create()->setGroups(['getUser']);
+            //return $serializer->serialize($userList, 'json', ['groups' => 'getUser']);
+            return $serializer->serialize($userList, 'json', $context);
         });
 
         /*$userList = $userRepository->findByWithPagination($client, $page, $limit);
@@ -70,7 +76,9 @@ class UserController extends AbstractController
         $jsonUser = $cache->get($idCache, function (ItemInterface $item) use ($user, $serializer) {
             $item->tag("userCache");
             $item->expiresAfter(180);
-            return $serializer->serialize($user, 'json', ['groups' => 'getUser']);
+            $context = SerializationContext::create()->setGroups(['getUser']);
+            //return $serializer->serialize($user, 'json', ['groups' => 'getUser']);
+            return $serializer->serialize($user, 'json', $context);
         });
 
         return new JsonResponse($jsonUser, Response::HTTP_OK, ['accept' => 'json'], true);
@@ -90,7 +98,7 @@ class UserController extends AbstractController
 
 
     #[Route('/api/users', name:"createUser", methods: ['POST'])]
-    public function createUser(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, UrlGeneratorInterface $urlGenerator, CustomerRepository $customerRepository, ValidatorInterface $validator): JsonResponse 
+    public function createUser(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, UrlGeneratorInterface $urlGenerator, CustomerRepository $customerRepository, ValidatorInterface $validator, UserPasswordHasherInterface $userPasswordHasher): JsonResponse 
     {
 
         $user = $serializer->deserialize($request->getContent(), User::class, 'json');
@@ -111,6 +119,9 @@ class UserController extends AbstractController
         $nameCustomer=$content['nameCustomer'];
         $user->setCustomer($customerRepository->findOneBy(['name' => $nameCustomer]));
 
+        $password=$content['password'];
+        $user->setPassword($userPasswordHasher->hashPassword($user, $password));
+
         $em->persist($user);
         $em->flush();
 
@@ -123,22 +134,45 @@ class UserController extends AbstractController
 
 
    #[Route('/api/users/{id}', name:"updateUser", methods:['PUT'])]
-    public function updateUser(Request $request, SerializerInterface $serializer, User $currentUser, EntityManagerInterface $em, CustomerRepository $customerRepository): JsonResponse 
+    public function updateUser(Request $request, SerializerInterface $serializer, User $currentUser, EntityManagerInterface $em, CustomerRepository $customerRepository, ValidatorInterface $validator, TagAwareCacheInterface $cache, UserPasswordHasherInterface $userPasswordHasher): JsonResponse 
     {
-        $updatedUser = $serializer->deserialize($request->getContent(), 
+        /*$updatedUser = $serializer->deserialize($request->getContent(), 
                 User::class, 
                 'json', 
-                [AbstractNormalizer::OBJECT_TO_POPULATE => $currentUser]);
+                [AbstractNormalizer::OBJECT_TO_POPULATE => $currentUser]);*/
 
+        $updatedUser = $serializer->deserialize($request->getContent(), User::class, 'json');
+        $currentUser->setName($updatedUser->getName());
+        $currentUser->setFirstName($updatedUser->getFirstName());
+        $currentUser->setWork($updatedUser->getWork());
+        $currentUser->setEmail($updatedUser->getEmail());
+        $currentUser->setPassword($userPasswordHasher->hashPassword($currentUser, $updatedUser->getPassword()));
+        //$utilisateur1->setName('xavier');
+        //$utilisateur1->setFirstName('charles');
+        //$utilisateur1->setWork('manager');
+        //$utilisateur1->setCustomer($listCustomer[0]);
+        //$utilisateur1->setEmail('xavier.charles@hotmail.fr');
+        //$utilisateur1->setPassword($this->userPasswordHasher->hashPassword($utilisateur1, "xavier"));
+
+        $errors = $validator->validate($currentUser);
+        if ($errors->count() > 0) {
+            return new JsonResponse($serializer->serialize($errors, 'json'), JsonResponse::HTTP_BAD_REQUEST, [], true);
+        }
+        
         $content = $request->toArray();
         $nameCustomer=$content['nameCustomer'];
-        $updatedUser->setCustomer($customerRepository->findOneBy(['name' => $nameCustomer]));
+
+        //$updatedUser->setCustomer($customerRepository->findOneBy(['name' => $nameCustomer]));
+        $currentUser->setCustomer($customerRepository->findOneBy(['name' => $nameCustomer]));
+        
+        
+        //$em->persist($updatedUser);
+        $em->persist($currentUser);
+        $em->flush();
 
         $cachePool->invalidateTags(["usersCache"]);
         $cachePool->invalidateTags(["userCache"]);
-        
-        $em->persist($updatedUser);
-        $em->flush();
+
         return new JsonResponse(null, JsonResponse::HTTP_NO_CONTENT);
    }
 }
