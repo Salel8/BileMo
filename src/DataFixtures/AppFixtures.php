@@ -7,9 +7,17 @@ use Doctrine\Persistence\ObjectManager;
 use App\Entity\Product;
 use App\Entity\Customer;
 use App\Entity\User;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class AppFixtures extends Fixture
 {
+    private $userPasswordHasher;
+    
+    public function __construct(UserPasswordHasherInterface $userPasswordHasher)
+    {
+        $this->userPasswordHasher = $userPasswordHasher;
+    }
+
     public function load(ObjectManager $manager): void
     {
         // Création d'une dizaine de téléphones ayant pour titre
@@ -50,7 +58,7 @@ class AppFixtures extends Fixture
         $utilisateur1->setWork('manager');
         $utilisateur1->setCustomer($listCustomer[0]);
         $utilisateur1->setEmail('xavier.charles@hotmail.fr');
-        $utilisateur1->setPassword('xavier');
+        $utilisateur1->setPassword($this->userPasswordHasher->hashPassword($utilisateur1, "xavier"));
         $manager->persist($utilisateur1);
         $manager->flush();
 
@@ -60,7 +68,7 @@ class AppFixtures extends Fixture
         $utilisateur2->setWork('manager');
         $utilisateur2->setCustomer($listCustomer[1]);
         $utilisateur2->setEmail('lensherr.eric@hotmail.fr');
-        $utilisateur2->setPassword('lensherr');
+        $utilisateur2->setPassword($this->userPasswordHasher->hashPassword($utilisateur2, "lensherr"));
         $manager->persist($utilisateur2);
         $manager->flush();
 
@@ -70,7 +78,7 @@ class AppFixtures extends Fixture
         $utilisateur3->setWork('employé');
         $utilisateur3->setCustomer($listCustomer[0]);
         $utilisateur3->setEmail('summers.scott@hotmail.fr');
-        $utilisateur3->setPassword('summers');
+        $utilisateur3->setPassword($this->userPasswordHasher->hashPassword($utilisateur3, "summers"));
         $manager->persist($utilisateur3);
         $manager->flush();
     }
