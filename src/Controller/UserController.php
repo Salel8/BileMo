@@ -15,6 +15,9 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
+
+
 
 class UserController extends AbstractController
 {
@@ -48,11 +51,28 @@ class UserController extends AbstractController
     }
 
 
-    #[Route('/api/users', name:"createUser", methods: ['POST'])]
-    public function createUser(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, UrlGeneratorInterface $urlGenerator): JsonResponse 
+    #[Route('/api/user', name:"createUser", methods: ['POST'])]
+    public function createUser(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, UrlGeneratorInterface $urlGenerator, CustomerRepository $customerRepository, ValidatorInterface $validator): JsonResponse 
     {
 
         $user = $serializer->deserialize($request->getContent(), User::class, 'json');
+
+        // On vérifie les erreurs
+        $errors = $validator->validate($user);
+
+        if ($errors->count() > 0) {
+            return new JsonResponse($serializer->serialize($errors, 'json'), JsonResponse::HTTP_BAD_REQUEST, [], true);
+        }
+
+        // Récupération de l'ensemble des données envoyées sous forme de tableau
+        $content = $request->toArray();
+
+        // Récupération de l'idCustomer. S'il n'est pas défini, alors on met 5 par défaut.
+        //$idCustomer = $content['idCustomer'] ?? 5;
+        //$user->setCustomer($customerRepository->find($idCustomer));
+        $nameCustomer=$content['nameCustomer'];
+        $user->setCustomer($customerRepository->findOneBy(['name' => $nameCustomer]));
+
         $em->persist($user);
         $em->flush();
 
@@ -65,12 +85,16 @@ class UserController extends AbstractController
 
 
    #[Route('/api/users/{id}', name:"updateUser", methods:['PUT'])]
-    public function updateUser(Request $request, SerializerInterface $serializer, User $currentUser, EntityManagerInterface $em): JsonResponse 
+    public function updateUser(Request $request, SerializerInterface $serializer, User $currentUser, EntityManagerInterface $em, CustomerRepository $customerRepository): JsonResponse 
     {
         $updatedUser = $serializer->deserialize($request->getContent(), 
                 User::class, 
                 'json', 
                 [AbstractNormalizer::OBJECT_TO_POPULATE => $currentUser]);
+
+        $content = $request->toArray();
+        $nameCustomer=$content['nameCustomer'];
+        $updatedUser->setCustomer($customerRepository->findOneBy(['name' => $nameCustomer]));
         
         $em->persist($updatedUser);
         $em->flush();
