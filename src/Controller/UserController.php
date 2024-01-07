@@ -17,6 +17,8 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
+
+
 class UserController extends AbstractController
 {
     #[Route('/api/users/{client}', name: 'app_user', methods: ['GET'])]
