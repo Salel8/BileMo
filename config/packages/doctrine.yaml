@@ -1,6 +1,11 @@
 doctrine:
     dbal:
-        
+        driver: '%env(resolve:DRIVER)%'
+        dbname: '%env(resolve:DBNAME)%'
+        port: '%env(resolve:PORT)%'
+        user: '%env(resolve:USER)%'
+        password: '%env(resolve:PASSWORD)%'
+        host: '%env(resolve:HOST)%'
         # url: '%env(resolve:DATABASE_URL)%'
 
         # IMPORTANT: You MUST configure your server version,
