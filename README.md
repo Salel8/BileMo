@@ -34,7 +34,7 @@ PASSWORD="password"
 HOST="host"
 ```
 
-Veillez à bien modifier les champs "driver", "dbname", le port, "user", "password" et "host" avec ceux correspondant à votre base de données. Si vous avez importé la base de données, son nom devrait être "bilemo". En local, souvent, le port est 8889.
+Veillez à bien modifier les champs "driver", "dbname", le port, "user", "password" et "host" avec ceux correspondant à votre base de données. Si vous avez importé la base de données, le driver est "pdo_mysql", le dbname est "bilemo". En local, souvent, le port est 8889, le host est "127.0.0.1" et le user et le password est ceux configuré dans votre PHPMyAdmin.
 
 Cette configuration étant établie, vous pouvez dorénavant profiter pleinement de l'ensemble du projet.
 
@@ -43,7 +43,7 @@ Cette configuration étant établie, vous pouvez dorénavant profiter pleinement
 Pour lancer le projet, il faut commencer par installer toutes les dépendances du projet. Pour cela, lancez le serveur PHP puis, via le terminal, placez-vous dans le dossier créé plus tôt contenant le code du projet. Puis lancez la commande :
 
 ```bash
-npm install
+composer install
 ```
 Une fois cette commande réalisée, vous devez lancer le serveur de symfony avec la commande :
 
